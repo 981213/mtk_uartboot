@@ -127,7 +127,26 @@ impl BootROM {
         self.echo(&u32::to_be_bytes(da_addr));
         let ret = self.read_be16();
         if ret != 0 {
-            panic!("send_da cmd status: {}", ret);
+            panic!("jump_da cmd status: {}", ret);
+        }
+    }
+
+    pub fn jump_da64(&mut self, da_addr: u32) {
+        self.echo(slice::from_ref(&0xde));
+        self.echo(&u32::to_be_bytes(da_addr));
+
+        // 1 for 64-bit
+        self.echo(slice::from_ref(&1));
+        let ret = self.read_be16();
+        if ret != 0 {
+            panic!("jump_da64 cmd status: {}", ret);
+        }
+
+        // A magic number checked before resetting CPU to aarch64
+        self.echo(slice::from_ref(&100));
+        let ret = self.read_be16();
+        if ret != 0 {
+            panic!("jump_da64 magic status: {}", ret);
         }
     }
 }

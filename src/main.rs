@@ -22,13 +22,9 @@ struct Args {
     #[arg(short, long, value_parser=maybe_hex::<u32>, default_value_t = 0x201000)]
     load_addr: u32,
 
-    /// Path to an additional ARMv7 payload. If specified, both payloads will be loaded and execution starts at this one.
-    #[arg(short, long)]
-    a32_payload: Option<String>,
-
-    /// Load address of the payload
-    #[arg(long, value_parser=maybe_hex::<u32>, default_value_t = 0x200a00)]
-    a32_load_addr: u32,
+    /// Whether this is an aarch64 payload
+    #[arg(short, long, default_value_t = false)]
+    aarch64: bool,
 
     /// Path to an FIP payload. When using MTK BL2 built with UART download support
     #[arg(short, long)]
@@ -68,20 +64,12 @@ fn load_bl2(args: &Args, port: Box<dyn SerialPort>) -> Box<dyn SerialPort> {
     let checksum = brom_dev.send_da(args.load_addr, 0, payload.as_slice());
     println!("Checksum: {:#x}", checksum);
 
-    match &args.a32_payload {
-        None => {
-            println!("Jumping to {:#x}...", args.load_addr);
-            brom_dev.jump_da(args.load_addr);
-        }
-        Some(a32_path) => {
-            let a32_payload = std::fs::read(a32_path)
-                .expect("failed to open payload.");
-            println!("sending a32 payload to {:#x}...", args.a32_load_addr);
-            let a32_checksum = brom_dev.send_da(args.a32_load_addr, 0, a32_payload.as_slice());
-            println!("Checksum: {:#x}", a32_checksum);
-            println!("Jumping to {:#x}...", args.a32_load_addr);
-            brom_dev.jump_da(args.a32_load_addr);
-        }
+    if args.aarch64 {
+        println!("Jumping to {:#x} in aarch64...", args.load_addr);
+        brom_dev.jump_da64(args.load_addr);
+    } else {
+        println!("Jumping to {:#x} in aarch32...", args.load_addr);
+        brom_dev.jump_da(args.load_addr);
     }
 
     brom_dev.into_serial_port()
