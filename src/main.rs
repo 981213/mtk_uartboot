@@ -30,7 +30,11 @@ struct Args {
     #[arg(short, long)]
     fip: Option<String>,
 
-    /// Load address of the payload
+    /// Baud rate for loading bootrom payload
+    #[arg(long, default_value_t = 460800)]
+    brom_load_baudrate: u32,
+
+    /// Baud rate for loading bl2 payload
     #[arg(long, default_value_t = 921600)]
     bl2_load_baudrate: u32,
 }
@@ -60,6 +64,8 @@ fn load_bl2(args: &Args, port: Box<dyn SerialPort>) -> Box<dyn SerialPort> {
 
     let payload = std::fs::read(&args.payload)
         .expect("failed to open payload.");
+    brom_dev.set_baudrate(args.brom_load_baudrate);
+    println!("Baud rate set to {}", args.brom_load_baudrate);
     println!("sending payload to {:#x}...", args.load_addr);
     let checksum = brom_dev.send_da(args.load_addr, 0, payload.as_slice());
     println!("Checksum: {:#x}", checksum);
@@ -107,7 +113,7 @@ fn load_fip(port: Box<dyn SerialPort>, baudrate: u32, fip: &str) {
     println!("BL2 UART DL version: {:#x}", bl2_dev.version());
     bl2_dev.set_baudrate(baudrate);
     bl2_dev.handshake();
-    println!("Baud rate set to: {}", baudrate);
+    println!("Baudrate set to: {}", baudrate);
 
     let payload = std::fs::read(fip)
         .expect("failed to open fip.");
@@ -126,8 +132,10 @@ fn main() {
         .timeout(Duration::from_secs(2))
         .open().expect("Failed to open port");
 
-    let port = load_bl2(&args, port);
+    let mut port = load_bl2(&args, port);
     if let Some(fip_path) = &args.fip {
+        println!("Setting baudrate back to 115200");
+        port.set_baud_rate(115200).unwrap();
         let (handshake_result, port) = wait_bl2_handshake(port);
         if !handshake_result {
             return;

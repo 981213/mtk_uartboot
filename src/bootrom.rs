@@ -131,6 +131,20 @@ impl BootROM {
         }
     }
 
+    pub fn set_baudrate(&mut self, baudrate: u32) -> bool {
+        self.echo(slice::from_ref(&0xdc));
+        self.echo(&u32::to_be_bytes(baudrate));
+        let ret = self.read_be16();
+        if ret == 0 {
+            self.port.set_baud_rate(baudrate).unwrap();
+            true
+        } else if ret == 0x1d1d {
+            panic!("{} is too high for bootrom.", baudrate);
+        } else {
+            unreachable!();
+        }
+    }
+
     pub fn jump_da64(&mut self, da_addr: u32) {
         self.echo(slice::from_ref(&0xde));
         self.echo(&u32::to_be_bytes(da_addr));
