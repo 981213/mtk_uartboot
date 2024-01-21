@@ -70,6 +70,9 @@ fn load_bl2(args: &Args, port: Box<dyn SerialPort>) -> Box<dyn SerialPort> {
     let checksum = brom_dev.send_da(args.load_addr, 0, payload.as_slice());
     println!("Checksum: {:#x}", checksum);
 
+    println!("Setting baudrate back to 115200");
+    brom_dev.set_baudrate(115200);
+
     if args.aarch64 {
         println!("Jumping to {:#x} in aarch64...", args.load_addr);
         brom_dev.jump_da64(args.load_addr);
@@ -132,10 +135,8 @@ fn main() {
         .timeout(Duration::from_secs(2))
         .open().expect("Failed to open port");
 
-    let mut port = load_bl2(&args, port);
+    let port = load_bl2(&args, port);
     if let Some(fip_path) = &args.fip {
-        println!("Setting baudrate back to 115200");
-        port.set_baud_rate(115200).unwrap();
         let (handshake_result, port) = wait_bl2_handshake(port);
         if !handshake_result {
             return;
