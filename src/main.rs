@@ -144,6 +144,7 @@ fn open_serial(port: Option<&str>) -> Box<dyn SerialPort> {
 }
 
 fn main() {
+    println!("mtk_uartboot - {}", env!("CARGO_PKG_VERSION"));
     let args = Args::parse();
 
     let port = open_serial(args.serial.as_deref());
