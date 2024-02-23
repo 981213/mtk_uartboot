@@ -12,7 +12,7 @@ use serialport::SerialPort;
 struct Args {
     /// Serial port
     #[arg(short, long)]
-    serial: String,
+    serial: Option<String>,
 
     /// Path to the binary code to be executed
     #[arg(short, long)]
@@ -128,13 +128,25 @@ fn load_fip(port: Box<dyn SerialPort>, baudrate: u32, fip: &str) {
     wait_for_line(bl2_dev.into_serial_port(), "Received FIP");
 }
 
+fn open_serial(port: Option<&str>) -> Box<dyn SerialPort> {
+    let port = match port {
+        Some(p) => p.to_owned(),
+        None => {
+            let ports = serialport::available_ports().expect("No serial ports found.");
+            ports.into_iter().nth(0).expect("No serial ports found.").port_name
+        },
+    };
+
+    println!("Using serial port: {}", port);
+    return serialport::new(&port, 115200)
+        .timeout(Duration::from_secs(2))
+        .open().expect("Failed to open port");
+}
+
 fn main() {
     let args = Args::parse();
 
-    let port = serialport::new(&args.serial, 115200)
-        .timeout(Duration::from_secs(2))
-        .open().expect("Failed to open port");
-
+    let port = open_serial(args.serial.as_deref());
     let port = load_bl2(&args, port);
     if let Some(fip_path) = &args.fip {
         let (handshake_result, port) = wait_bl2_handshake(port);
