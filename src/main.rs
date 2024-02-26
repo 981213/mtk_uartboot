@@ -133,14 +133,14 @@ fn open_serial(port: Option<&str>) -> Box<dyn SerialPort> {
         Some(p) => p.to_owned(),
         None => {
             let ports = serialport::available_ports().expect("No serial ports found.");
-            ports.into_iter().nth(0).expect("No serial ports found.").port_name
+            ports.into_iter().next().expect("No serial ports found.").port_name
         },
     };
 
     println!("Using serial port: {}", port);
-    return serialport::new(&port, 115200)
+    serialport::new(&port, 115200)
         .timeout(Duration::from_secs(2))
-        .open().expect("Failed to open port");
+        .open().expect("Failed to open port")
 }
 
 fn main() {

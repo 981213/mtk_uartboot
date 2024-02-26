@@ -3,7 +3,7 @@ use std::slice;
 use std::time::Duration;
 use serialport::{ClearBuffer, SerialPort};
 
-static BROM_HANDSHAKE: &'static [u8] = &[0xa0, 0x0a, 0x50, 0x05];
+static BROM_HANDSHAKE: &[u8] = &[0xa0, 0x0a, 0x50, 0x05];
 pub struct BootROM {
     port: Box<dyn SerialPort>,
 }
@@ -24,10 +24,10 @@ impl BootROM {
         let mut rx_char = 0;
         self.port.set_timeout(Duration::from_millis(5)).unwrap();
         while i < BROM_HANDSHAKE.len() {
-            self.port.write(&BROM_HANDSHAKE[i .. i+1])
+            self.port.write_all(&BROM_HANDSHAKE[i .. i+1])
                 .expect("failed to write to port.");
-            if let Ok(len) = self.port.read(slice::from_mut(&mut rx_char)) {
-                if len == 1 && BROM_HANDSHAKE[i] == !rx_char {
+            if let Ok(()) = self.port.read_exact(slice::from_mut(&mut rx_char)) {
+                if BROM_HANDSHAKE[i] == !rx_char {
                     i += 1;
                 }
             }
@@ -39,8 +39,8 @@ impl BootROM {
     fn echo(&mut self, buf: &[u8]) {
         let mut rx_buf: Vec<u8> =vec![0; buf.len()];
         self.port.set_timeout(Duration::from_millis(100)).unwrap();
-        self.port.write(buf).expect("failed to write to port.");
-        self.port.read(rx_buf.as_mut_slice()).unwrap();
+        self.port.write_all(buf).expect("failed to write to port.");
+        self.port.read_exact(rx_buf.as_mut_slice()).unwrap();
         if buf != rx_buf {
             panic!("returned data isn't the same. Tx: {:?} Rx: {:?}", buf, rx_buf);
         }
@@ -48,19 +48,13 @@ impl BootROM {
 
     fn read_be16(&mut self) -> u16 {
         let mut rx_buf: Vec<u8> = vec![0; 2];
-        let len = self.port.read(rx_buf.as_mut_slice()).unwrap();
-        if len != 2 {
-            panic!("not enough data returned.")
-        }
+        self.port.read_exact(rx_buf.as_mut_slice()).unwrap();
         u16::from_be_bytes(rx_buf.try_into().unwrap())
     }
 
     fn read_be32(&mut self) -> u32 {
         let mut rx_buf: Vec<u8> = vec![0; 4];
-        let len = self.port.read(rx_buf.as_mut_slice()).unwrap();
-        if len != 4 {
-            panic!("not enough data returned.")
-        }
+        self.port.read_exact(rx_buf.as_mut_slice()).unwrap();
         u32::from_be_bytes(rx_buf.try_into().unwrap())
     }
 
@@ -110,7 +104,7 @@ impl BootROM {
             panic!("send_da cmd status: {}", ret);
         }
 
-        self.port.write(da_buf).unwrap();
+        self.port.write_all(da_buf).unwrap();
         while self.port.bytes_to_write().unwrap() > 0 {
             std::thread::sleep(Duration::from_millis(200));
         }

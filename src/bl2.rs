@@ -3,8 +3,8 @@ use std::slice;
 use std::time::Duration;
 use serialport::{ClearBuffer, SerialPort};
 
-static BL2_HANDSHAKE_REQ: &'static [u8] = "mudl".as_bytes();
-static BL2_HANDSHAKE_RESP: &'static [u8] = "TF-A".as_bytes();
+static BL2_HANDSHAKE_REQ: &[u8] = "mudl".as_bytes();
+static BL2_HANDSHAKE_RESP: &[u8] = "TF-A".as_bytes();
 
 pub struct BL2 {
     port: Box<dyn SerialPort>,
@@ -26,10 +26,10 @@ impl BL2 {
         let mut rx_char = 0;
         self.port.set_timeout(Duration::from_millis(500)).unwrap();
         while i < 4 {
-            self.port.write(&BL2_HANDSHAKE_REQ[i..i + 1])
+            self.port.write_all(&BL2_HANDSHAKE_REQ[i..i + 1])
                 .expect("failed to write to port.");
-            if let Ok(len) = self.port.read(slice::from_mut(&mut rx_char)) {
-                if len == 1 && BL2_HANDSHAKE_RESP[i] == rx_char {
+            if let Ok(()) = self.port.read_exact(slice::from_mut(&mut rx_char)) {
+                if BL2_HANDSHAKE_RESP[i] == rx_char {
                     i += 1;
                 }
             }
@@ -41,8 +41,8 @@ impl BL2 {
     fn echo(&mut self, buf: &[u8]) {
         let mut rx_buf: Vec<u8> = vec![0; buf.len()];
         self.port.set_timeout(Duration::from_millis(100)).unwrap();
-        self.port.write(buf).expect("failed to write to port.");
-        self.port.read(rx_buf.as_mut_slice()).unwrap();
+        self.port.write_all(buf).expect("failed to write to port.");
+        self.port.read_exact(rx_buf.as_mut_slice()).unwrap();
         if buf != rx_buf {
             panic!("returned data isn't the same. Tx: {:?} Rx: {:?}", buf, rx_buf);
         }
@@ -50,26 +50,20 @@ impl BL2 {
 
     fn read_be16(&mut self) -> u16 {
         let mut rx_buf: Vec<u8> = vec![0; 2];
-        let len = self.port.read(rx_buf.as_mut_slice()).unwrap();
-        if len != 2 {
-            panic!("not enough data returned.")
-        }
+        self.port.read_exact(rx_buf.as_mut_slice()).unwrap();
         u16::from_be_bytes(rx_buf.try_into().unwrap())
     }
 
     fn read_be32(&mut self) -> u32 {
         let mut rx_buf: Vec<u8> = vec![0; 4];
-        let len = self.port.read(rx_buf.as_mut_slice()).unwrap();
-        if len != 4 {
-            panic!("not enough data returned.")
-        }
+        self.port.read_exact(rx_buf.as_mut_slice()).unwrap();
         u32::from_be_bytes(rx_buf.try_into().unwrap())
     }
 
     pub fn version(&mut self) -> u8 {
         self.echo(slice::from_ref(&1));
         let mut rx_char = 0;
-        self.port.read(slice::from_mut(&mut rx_char)).unwrap();
+        self.port.read_exact(slice::from_mut(&mut rx_char)).unwrap();
         rx_char
     }
 
@@ -104,7 +98,7 @@ impl BL2 {
         self.echo(&u16::to_be_bytes(fip.len() as u16));
         let checksum = BL2::fip_packet_checksum(fip);
         self.echo(&u16::to_be_bytes(checksum));
-        self.port.write(fip).expect("failed to send fip packet.");
+        self.port.write_all(fip).expect("failed to send fip packet.");
 
         while self.port.bytes_to_write().unwrap() > 0 {
             std::thread::sleep(Duration::from_millis(50));
