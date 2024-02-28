@@ -22,23 +22,25 @@ impl BootROM {
     pub fn handshake(&mut self) {
         let mut i = 0;
         let mut rx_char = 0;
-        self.port.set_timeout(Duration::from_millis(5)).unwrap();
+        self.port.set_timeout(Duration::from_millis(10)).unwrap();
         while i < BROM_HANDSHAKE.len() {
             self.port.write_all(&BROM_HANDSHAKE[i .. i+1])
                 .expect("failed to write to port.");
             if let Ok(()) = self.port.read_exact(slice::from_mut(&mut rx_char)) {
                 if BROM_HANDSHAKE[i] == !rx_char {
                     i += 1;
+                } else {
+                    i = 0;
                 }
             }
         }
         std::thread::sleep(Duration::from_millis(200));
         self.port.clear(ClearBuffer::Input).unwrap();
+        self.port.set_timeout(Duration::from_millis(500)).unwrap();
     }
 
     fn echo(&mut self, buf: &[u8]) {
         let mut rx_buf: Vec<u8> =vec![0; buf.len()];
-        self.port.set_timeout(Duration::from_millis(100)).unwrap();
         self.port.write_all(buf).expect("failed to write to port.");
         self.port.read_exact(rx_buf.as_mut_slice()).unwrap();
         if buf != rx_buf {
