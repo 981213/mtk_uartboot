@@ -26,7 +26,7 @@ struct Args {
     #[arg(short, long, default_value_t = false)]
     aarch64: bool,
 
-    /// Path to an FIP payload. When using MTK BL2 built with UART download support
+    /// Path to an FIP payload. Use this to start an FIP using MTK BL2 built with UART download support
     #[arg(short, long)]
     fip: Option<String>,
 

@@ -37,7 +37,7 @@ Options:
   -a, --aarch64
           Whether this is an aarch64 payload
   -f, --fip <FIP>
-          Path to an FIP payload. When using MTK BL2 built with UART download support
+          Path to an FIP payload. Use this to start an FIP using MTK BL2 built with UART download support
       --brom-load-baudrate <BROM_LOAD_BAUDRATE>
           Baud rate for loading bootrom payload [default: 460800]
       --bl2-load-baudrate <BL2_LOAD_BAUDRATE>
