@@ -13,14 +13,9 @@ The UART recovery protocol is exactly the same as the USB one on MTK smartphone 
 
 # Compatibility
 
-## SoCs
-
 This utility should work on all Mediatek SoCs with secure-boot disabled. It's been tested on MT7622/MT7629 and MT798x.
 
 This utility won't work on secure-boot enabled routers.
-
-## USB-UART adapters
-Current implementation seems to be a bit picky on UART adapters. It's known to work with WCH CH340/CH341/CH343/CH347. It might stuck at bootrom handshake with some counterfeit FTDI adapters.
 
 # Usage
 
