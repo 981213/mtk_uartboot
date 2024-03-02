@@ -1,4 +1,4 @@
-name: Rust
+name: Build binaries
 
 on:
   push:
@@ -7,14 +7,56 @@ on:
     branches: [ "main" ]
 
 env:
-  CARGO_TERM_COLOR: always
+  PROJECT_NAME: mtk_uartboot
+  RUSTFLAGS: -C target-feature=+crt-static
 
 jobs:
-  build:
+  build-and-upload:
+    runs-on: ${{ matrix.runner }}
 
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: linux-amd64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - name: win-amd64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+          - name: macos-amd64
+            runner: macos-latest
+            target: x86_64-apple-darwin
+          - name: macos-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "${{ matrix.target }}"
+
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build Binary
+        run: cargo build --verbose --locked --release --target ${{ matrix.target }}
+
+      - name: Get binary path
+        shell: bash
+        run: |
+          if [ "${{ matrix.runner }}" = "windows-latest" ]; then
+            bin_path="target/${{ matrix.target }}/release/${PROJECT_NAME}.exe"
+          else
+            bin_path="target/${{ matrix.target }}/release/${PROJECT_NAME}"
+          fi
+          echo "ASSET=$bin_path" >> $GITHUB_ENV
+
+      - name: Upload the binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: mtk-uartboot-${{ matrix.target }}
+          path: ${{ env.ASSET }}
