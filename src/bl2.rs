@@ -40,7 +40,6 @@ impl BL2 {
 
     fn echo(&mut self, buf: &[u8]) {
         let mut rx_buf: Vec<u8> = vec![0; buf.len()];
-        self.port.set_timeout(Duration::from_millis(100)).unwrap();
         self.port.write_all(buf).expect("failed to write to port.");
         self.port.read_exact(rx_buf.as_mut_slice()).unwrap();
         if buf != rx_buf {
