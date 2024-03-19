@@ -2,7 +2,7 @@
 name = "mtk_uartboot"
 version = "0.1.1"
 edition = "2021"
-license = "GPL-2"
+license = "AGPL-3.0-only"
 
 [profile.release]
 panic = "abort"
