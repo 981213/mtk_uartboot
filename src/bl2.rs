@@ -3,8 +3,8 @@ use std::slice;
 use std::time::Duration;
 use serialport::{ClearBuffer, SerialPort};
 
-static BL2_HANDSHAKE_REQ: &[u8] = "mudl".as_bytes();
-static BL2_HANDSHAKE_RESP: &[u8] = "TF-A".as_bytes();
+const BL2_HANDSHAKE_REQ: &[u8] = "mudl".as_bytes();
+const BL2_HANDSHAKE_RESP: &[u8] = "TF-A".as_bytes();
 
 pub struct BL2 {
     port: Box<dyn SerialPort>,

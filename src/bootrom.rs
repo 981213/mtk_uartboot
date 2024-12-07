@@ -3,7 +3,7 @@ use std::slice;
 use std::time::Duration;
 use serialport::{ClearBuffer, SerialPort};
 
-static BROM_HANDSHAKE: &[u8] = &[0xa0, 0x0a, 0x50, 0x05];
+const BROM_HANDSHAKE: &[u8] = &[0xa0, 0x0a, 0x50, 0x05];
 pub struct BootROM {
     port: Box<dyn SerialPort>,
 }
